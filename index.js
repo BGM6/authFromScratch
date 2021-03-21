@@ -29,6 +29,11 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
+//routes
+app.use('/', (req, res) => {
+		res.send('home!')
+})
+
 app.listen(PORT, () => {
 		console.log(`SERVER LISTENING ON PORT ${PORT}`);
 })
