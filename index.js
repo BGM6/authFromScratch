@@ -11,12 +11,12 @@ mongoose.connect('mongodb://localhost:27017/authScratch', {
 		useCreateIndex: true,
 		useUnifiedTopology: true,
 		useFindAndModify: false
-});
+}).then(() => console.log('Success'));
 
 const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'CONNECTION ERROR'))
-db.once('OPEN', () => {
-		console.log('DATABASE CONNECTED');
+db.on('error', console.error.bind(console, 'Connection Error'));
+db.once('open', () => {
+		console.log('Connection opened');
 })
 
 const app = express();
