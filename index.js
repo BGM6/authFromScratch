@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
+const path = require('path');
 const PORT = 5000;
 const app = express();
 const User = require('./models/user');
@@ -18,8 +19,16 @@ db.once('open', () => {
 })
 
 app.set('view engine', 'ejs');
-app.set('views', 'views');
+app.set('views', path.join(__dirname, 'views'));
 
+//middleware
+const requireLogin = (req, res, next) => {
+		if(!req.session.user_id) {
+				return res.redirect('/login');
+		} else {
+				next();
+		}
+}
 app.use(express.urlencoded({extended: true}));
 //Session setup
 app.use(session({secret: 'monkey123'}));
@@ -62,11 +71,18 @@ app.post('/login', async (req, res) => {
 		}
 })
 
-app.get('/secret', (req, res) => {
-		if(!req.session.user_id) {
-				res.redirect('/login');
-		}
-		res.send('SECRET ROUTE YOU CAN ONLY SEE IF YOU ARE LOGGED IN!')
+//logout
+app.post('/logout', (req, res) => {
+		req.session.user_id = null;
+		res.redirect('/login');
+})
+
+//protected route
+app.get('/secret', requireLogin, (req, res) => {
+		// if(!req.session.user_id) {
+		// 		return res.redirect('/login');
+		// }
+		res.render('secret');
 })
 
 app.listen(PORT, () => {
