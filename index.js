@@ -1,39 +1,74 @@
 const express = require('express');
-const PORT = 3000;
 const mongoose = require('mongoose');
-const path = require('path');
-//auth
 const bcrypt = require('bcrypt');
+const PORT = 5000;
+const app = express();
+const User = require('./models/user');
 const session = require('express-session');
 
-mongoose.connect('mongodb://localhost:27017/authScratch', {
+mongoose.connect('mongodb://localhost:27017/authFromScratch', {
 		useNewUrlParser: true,
-		useCreateIndex: true,
 		useUnifiedTopology: true,
-		useFindAndModify: false
 }).then(() => console.log('Success'));
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'Connection Error'));
 db.once('open', () => {
-		console.log('Connection opened');
+		console.log('Connected to MongoDB');
 })
 
-const app = express();
-
-//ejs setup
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', 'views');
 
-//middleware
-app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+//Session setup
+app.use(session({secret: 'monkey123'}));
 
-//routes
-app.use('/', (req, res) => {
-		res.send('home!')
+app.get('/', (req, res) => {
+		res.send('Welcome to the homepage');
+})
+
+//Register
+app.get('/register', (req, res) => {
+		res.render('register')
+})
+
+app.post('/register', async (req, res) => {
+		const { password, username } = req.body;
+		const hash = await bcrypt.hash(password, 12);
+		const user = new User({
+				username,
+				password: hash,
+		})
+		await user.save();
+		res.session.user_id = user._id;
+		res.redirect('/')
+})
+
+//Login
+app.get('/login', (req, res) => {
+		res.render('login');
+})
+
+app.post('/login', async (req, res) => {
+		const {username, password} = req.body;
+		const user = await User.findOne({username});
+		const validPassword = await bcrypt.compare(password, user.password);
+		if(validPassword) {
+				req.session.user_id = user._id;
+				res.redirect('/secret');
+		} else {
+				res.redirect('/login');
+		}
+})
+
+app.get('/secret', (req, res) => {
+		if(!req.session.user_id) {
+				res.redirect('/login');
+		}
+		res.send('SECRET ROUTE YOU CAN ONLY SEE IF YOU ARE LOGGED IN!')
 })
 
 app.listen(PORT, () => {
-		console.log(`SERVER LISTENING ON PORT ${PORT}`);
+		console.log(`Server listening on port ${PORT}`);
 })
